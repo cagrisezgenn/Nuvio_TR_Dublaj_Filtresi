@@ -18,7 +18,10 @@ jobs:
           repository: NuvioMedia/NuvioMobile
           ref: cmp-rewrite
           path: nuvio-upstream
-          submodules: recursive
+          submodules: false
+      - name: Initialize only valid MPVKit submodule
+        run: |
+          git -C nuvio-upstream submodule update --init MPVKit
       - name: Install JDK 21
         uses: actions/setup-java@v4
         with:
