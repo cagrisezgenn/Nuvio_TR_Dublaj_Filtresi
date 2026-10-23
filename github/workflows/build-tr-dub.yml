@@ -1,0 +1,46 @@
+name: Build Nuvio TR Dublaj (debug APK)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out filter package repository
+        uses: actions/checkout@v4
+      - name: Check out official Nuvio Mobile
+        uses: actions/checkout@v4
+        with:
+          repository: NuvioMedia/NuvioMobile
+          ref: cmp-rewrite
+          path: nuvio-upstream
+          submodules: recursive
+      - name: Install JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+          cache-dependency-path: nuvio-upstream/**/*.gradle*
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Validate upstream and apply filter
+        run: |
+          python3 scripts/install_filter.py nuvio-upstream --check
+          python3 scripts/install_filter.py nuvio-upstream
+      - name: Build separate-install debug APK
+        working-directory: nuvio-upstream
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :androidApp:assembleFullDebug --stacktrace
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nuvio-TR-Dublaj-debug-APK
+          path: nuvio-upstream/androidApp/build/outputs/apk/full/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
