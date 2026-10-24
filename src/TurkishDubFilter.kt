@@ -12,6 +12,7 @@ internal enum class TurkishAudioFilterMode(val label: String) {
     ALL("Tümü"),
     TURKISH("TR Dublaj + Olası"),
     EXPLICIT("Açık TR Etiketi"),
+    MANIFEST("HLS/DASH TR Ses"),
     DUAL("TR Çift Ses"),
     UNKNOWN("Belirsiz"),
 }
@@ -26,8 +27,8 @@ internal data class TurkishAudioAssessment(
 
 internal object TurkishDubFilter {
     private val explicitDub = Regex(
-        "(?:^| )(?:turkce|turkish|tr|tur) (?:dublaj|dublajli|dub|audio|ses)(?: |$)|" +
-            "(?:^| )(?:dublaj|dublajli|dub|audio|ses) (?:turkce|turkish|tr|tur)(?: |$)"
+        "(?:^| )(?:turkce|turkish|tr|tur) (?:dublaj|dublajli|dub|audio|ses|seslendirme|seslendirmeli|voiceover)(?: |$)|" +
+            "(?:^| )(?:dublaj|dublajli|dub|audio|ses|seslendirme|seslendirmeli|voiceover) (?:turkce|turkish|tr|tur)(?: |$)"
     )
     private val turkishAudioField = Regex(
         "(?:^| )(?:audio|ses|audio language|ses dili|language|languages|dil) " +
@@ -122,22 +123,23 @@ internal object TurkishDubFilter {
         )
     }
 
-    fun matches(stream: StreamItem, mode: TurkishAudioFilterMode): Boolean {
+    fun matches(stream: StreamItem, mode: TurkishAudioFilterMode, manifestTurkishUrls: Set<String> = emptySet()): Boolean {
         if (mode == TurkishAudioFilterMode.ALL) return true
         val assessment = assess(stream)
         return when (mode) {
             TurkishAudioFilterMode.ALL -> true
-            TurkishAudioFilterMode.TURKISH -> assessment.turkishClaim
+            TurkishAudioFilterMode.TURKISH -> assessment.turkishClaim || (stream.playableDirectUrl?.let(manifestTurkishUrls::contains) == true)
             TurkishAudioFilterMode.EXPLICIT -> assessment.explicitTurkishClaim
+            TurkishAudioFilterMode.MANIFEST -> (stream.playableDirectUrl?.let(manifestTurkishUrls::contains) == true)
             TurkishAudioFilterMode.DUAL -> assessment.turkishDualClaim
-            TurkishAudioFilterMode.UNKNOWN -> !assessment.turkishClaim
+            TurkishAudioFilterMode.UNKNOWN -> !assessment.turkishClaim && (stream.playableDirectUrl?.let(manifestTurkishUrls::contains) != true)
         }
     }
 
-    fun filterGroups(groups: List<AddonStreamGroup>, mode: TurkishAudioFilterMode): List<AddonStreamGroup> {
+    fun filterGroups(groups: List<AddonStreamGroup>, mode: TurkishAudioFilterMode, manifestTurkishUrls: Set<String> = emptySet()): List<AddonStreamGroup> {
         if (mode == TurkishAudioFilterMode.ALL) return groups
         return groups.mapNotNull { group ->
-            val matching = group.streams.filter { matches(it, mode) }
+            val matching = group.streams.filter { matches(it, mode, manifestTurkishUrls) }
             if (matching.isEmpty() && !group.isLoading) null else group.copy(streams = matching)
         }
     }
