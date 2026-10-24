@@ -24,8 +24,9 @@ import com.nuvio.app.features.plugins.PluginRepository
 import kotlinx.coroutines.launch
 
 /**
- * User-controlled import, no automatic remote code execution. Existing
- * addon/provider preferences are never disabled, removed or reset here.
+ * Exactly 29 Nuvio entries, imported only by explicit user actions.
+ * Existing addon and plugin enablement is not reset or modified.
+ * A failed remote manifest is reported and skipped.
  */
 @Composable
 internal fun SourceBundlePanel() {
@@ -38,9 +39,10 @@ internal fun SourceBundlePanel() {
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("Yerleşik kaynak paketi", style = MaterialTheme.typography.titleMedium)
+        Text("Yerleşik 29 Nuvio kaynağı", style = MaterialTheme.typography.titleMedium)
         Text(
-            "Nuvio uyumlu kaynak adresleri uygulamaya gömülüdür. Topluca ekleyebilirsiniz; mevcut kaynaklarınız kapatılmaz veya silinmez.",
+            "16 eklenti ve 13 plugin deposu. CloudStream/Play kaynakları bu pakette yoktur. " +
+                "Kaynaklar siz onaylamadan kurulmaz; mevcut sağlayıcılarınız korunur.",
             style = MaterialTheme.typography.bodySmall,
         )
         Button(enabled = !busy, onClick = {
@@ -48,75 +50,77 @@ internal fun SourceBundlePanel() {
             scope.launch {
                 var added = 0
                 var existing = 0
-                var failed = 0
+                val failed = mutableListOf<String>()
                 try {
                     AddonRepository.initialize()
                     for (source in BundledMediaSources.nuvioAddons) {
                         message = "Eklenti kontrolü: ${source.name}"
-                        if (AddonRepository.uiState.value.addons.any { it.manifestUrl == source.url }) {
+                        if (AddonRepository.uiState.value.addons.any { it.manifestUrl.trimEnd('/') == source.url.trimEnd('/') }) {
                             existing++
                             continue
                         }
                         when (AddonRepository.addAddon(source.url)) {
                             is AddAddonResult.Success -> added++
-                            else -> failed++
+                            else -> failed += source.name
                         }
                     }
-                    message = "Nuvio eklentileri: $added eklendi, $existing mevcut, $failed yüklenemedi."
+                    message = "Eklentiler: $added eklendi, $existing mevcut, ${failed.size} başarısız." +
+                        if (failed.isNotEmpty()) " Başarısızlar: ${failed.joinToString(", ")}" else ""
                 } finally { busy = false }
             }
         }) {
-            Text(if (busy) "Kaynaklar kontrol ediliyor..." else "Nuvio eklentilerini ekle (${BundledMediaSources.nuvioAddons.size})")
+            Text(if (busy) "Eklentiler kontrol ediliyor..." else "16 Nuvio eklentisini ekle")
         }
-
         OutlinedButton(enabled = !busy, onClick = {
             busy = true
             scope.launch {
                 var added = 0
                 var existing = 0
-                var failed = 0
+                val failed = mutableListOf<String>()
                 try {
                     PluginRepository.initialize()
                     for (source in BundledMediaSources.nuvioPlugins) {
                         message = "Plugin deposu kontrolü: ${source.name}"
-                        if (PluginRepository.uiState.value.repositories.any { it.manifestUrl == source.url }) {
+                        if (PluginRepository.uiState.value.repositories.any { it.manifestUrl.trimEnd('/') == source.url.trimEnd('/') }) {
                             existing++
                             continue
                         }
                         when (PluginRepository.addRepository(source.url)) {
                             is AddPluginRepositoryResult.Success -> added++
-                            else -> failed++
+                            else -> failed += source.name
                         }
                     }
-                    message = "Nuvio plugin depoları: $added eklendi, $existing mevcut, $failed yüklenemedi."
+                    message = "Pluginler: $added eklendi, $existing mevcut, ${failed.size} başarısız." +
+                        if (failed.isNotEmpty()) " Başarısızlar: ${failed.joinToString(", ")}" else ""
                 } finally { busy = false }
             }
         }) {
-            Text("Nuvio plugin depolarını ekle (${BundledMediaSources.nuvioPlugins.size})")
+            Text("13 Nuvio plugin deposunu ekle")
         }
-
         if (message.isNotBlank()) Text(message, style = MaterialTheme.typography.bodySmall)
         OutlinedButton(enabled = !busy, onClick = { detailsVisible = !detailsVisible }) {
-            Text("CloudStream kataloğu (${BundledMediaSources.cloudStreamRepositories.size}) " +
-                if (detailsVisible) "gizle" else "göster")
+            Text(if (detailsVisible) "29 kaynağı gizle" else "29 kaynağı göster")
         }
-
         if (detailsVisible) {
             Text(
-                "Bu 15 URL, CSRepoManager_User.apk'den alınmıştır. CloudStream repo.json / cs3 dosyaları Nuvio Mobile'ın normal eklenti veya JS plugin formatına uymaz; otomatik kurulmaz veya oynatılmaz.",
+                "Aşağıdaki liste 22 Ekim 2026 tarihli Repo Manager kaydından dondurulmuştur. " +
+                    "MANİTUX kaynakta eklenti yazıyor ancak manifest yapısına göre plugin olarak yüklenir. " +
+                    "Manifest erişimi başarısız olan adresler katalogda kalır, yüklemede atlanır.",
                 style = MaterialTheme.typography.bodySmall,
             )
             SelectionContainer {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    BundledMediaSources.cloudStreamRepositories.forEach { source ->
-                        Text("${source.name}\n${source.url}", style = MaterialTheme.typography.bodySmall)
+                    BundledMediaSources.nuvioSources.forEachIndexed { index, source ->
+                        Text(
+                            "${index + 1}. ${source.name} (${if (source.kind == SourceKind.ADDON) "Eklenti" else "Plugin"})\n${source.url}",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                     }
                 }
             }
             Text(
-                "Sağlayıcı açıklamalarında Türkçe dublaj desteği bildirilenler: " +
-                    BundledMediaSources.reportedDubCapableProviders.joinToString(", ") +
-                    ". Bu bildirim tekil akışın Türkçe ses izi bulunduğu anlamına gelmez.",
+                "ÖNEMLİ: İçeriğin veya sağlayıcının contentLanguage: tr olarak işaretlenmesi Türkçe dublaj " +
+                    "kanıtı değildir. Tekil akışın ses kanalı oynatıcıda doğrulanmalıdır.",
                 style = MaterialTheme.typography.bodySmall,
             )
         }
