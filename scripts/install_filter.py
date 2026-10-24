@@ -109,6 +109,8 @@ def patch(original: str) -> str:
     )
     segment = replace_once(segment, old_item, '', 'v1 item removal')
     old_end = '    }\n    }\n}\n'
+    trailing = segment[len(segment.rstrip()):]
+    segment = segment.rstrip() + '\n'
     if not segment.endswith(old_end):
         raise RuntimeError('Safety stop: StreamList end changed; refusing to add Column.')
     segment = segment[:-len(old_end)] + (
@@ -116,7 +118,7 @@ def patch(original: str) -> str:
         '    } // end sticky Column\n'
         '    } // end CompositionLocalProvider\n'
         '}\n'
-    )
+    ) + trailing[1:]
     return head + segment + tail
 
 
