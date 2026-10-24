@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - feat/bundled-source-catalog-v0.3
+      - feat/audio-manifest-probe-v0.5
 
 permissions:
   contents: read
@@ -66,6 +67,8 @@ jobs:
           set -euo pipefail
           python3 scripts/install_filter.py nuvio-upstream --check
           python3 scripts/install_filter.py nuvio-upstream
+          python3 scripts/install_audio_probe.py nuvio-upstream --check
+          python3 scripts/install_audio_probe.py nuvio-upstream
           python3 scripts/check_bundle.py
           python3 scripts/install_bundle.py nuvio-upstream --check
           python3 scripts/install_bundle.py nuvio-upstream
