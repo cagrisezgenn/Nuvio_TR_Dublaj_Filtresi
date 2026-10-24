@@ -128,11 +128,11 @@ internal object TurkishDubFilter {
         val assessment = assess(stream)
         return when (mode) {
             TurkishAudioFilterMode.ALL -> true
-            TurkishAudioFilterMode.TURKISH -> assessment.turkishClaim || stream.playableDirectUrl in manifestTurkishUrls
+            TurkishAudioFilterMode.TURKISH -> assessment.turkishClaim || (stream.playableDirectUrl?.let(manifestTurkishUrls::contains) == true)
             TurkishAudioFilterMode.EXPLICIT -> assessment.explicitTurkishClaim
-            TurkishAudioFilterMode.MANIFEST -> stream.playableDirectUrl in manifestTurkishUrls
+            TurkishAudioFilterMode.MANIFEST -> (stream.playableDirectUrl?.let(manifestTurkishUrls::contains) == true)
             TurkishAudioFilterMode.DUAL -> assessment.turkishDualClaim
-            TurkishAudioFilterMode.UNKNOWN -> !assessment.turkishClaim && stream.playableDirectUrl !in manifestTurkishUrls
+            TurkishAudioFilterMode.UNKNOWN -> !assessment.turkishClaim && (stream.playableDirectUrl?.let(manifestTurkishUrls::contains) != true)
         }
     }
 
