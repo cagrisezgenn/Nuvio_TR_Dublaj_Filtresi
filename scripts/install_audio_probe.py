@@ -77,13 +77,13 @@ def patch(source: str) -> str:
     s = one(s, old, insert, "StreamList groups")
     s = one(
         s,
-        "                totalCount = uiState.filteredGroups.sumOf { it.streams.size },\n"
+        "            totalCount = uiState.filteredGroups.sumOf { it.streams.size },\n"
         "        )\n",
-        "                totalCount = uiState.filteredGroups.sumOf { it.streams.size },\n"
-        "                eligibleCount = scanEligible.size,\n"
-        "                inspectedCount = audioManifestReports.size,\n"
-        "                isInspecting = audioScanning,\n"
-        "                onInspect = onInspectManifests,\n"
+        "            totalCount = uiState.filteredGroups.sumOf { it.streams.size },\n"
+        "            eligibleCount = scanEligible.size,\n"
+        "            inspectedCount = audioManifestReports.size,\n"
+        "            isInspecting = audioScanning,\n"
+        "            onInspect = onInspectManifests,\n"
         "        )\n",
         "sticky toolbar parameters",
     )
