@@ -26,8 +26,8 @@ internal data class TurkishAudioAssessment(
 
 internal object TurkishDubFilter {
     private val explicitDub = Regex(
-        "(?:^| )(?:turkce|turkish|tr|tur) (?:dublaj|dublajli|dub|audio|ses)(?: |$)|" +
-            "(?:^| )(?:dublaj|dublajli|dub|audio|ses) (?:turkce|turkish|tr|tur)(?: |$)"
+        "(?:^| )(?:turkce|turkish|tr|tur) (?:dublaj|dublajli|dub|audio|ses|seslendirme|seslendirmeli|voiceover)(?: |$)|" +
+            "(?:^| )(?:dublaj|dublajli|dub|audio|ses|seslendirme|seslendirmeli|voiceover) (?:turkce|turkish|tr|tur)(?: |$)"
     )
     private val turkishAudioField = Regex(
         "(?:^| )(?:audio|ses|audio language|ses dili|language|languages|dil) " +
