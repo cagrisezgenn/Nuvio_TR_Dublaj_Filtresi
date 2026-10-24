@@ -55,7 +55,7 @@ internal fun SourceBundlePanel() {
                     AddonRepository.initialize()
                     for (source in BundledMediaSources.nuvioAddons) {
                         message = "Eklenti kontrolü: ${source.name}"
-                        if (AddonRepository.uiState.value.addons.any { it.manifestUrl.trimEnd('/') == source.url.trimEnd('/') }) {
+                        if (AddonRepository.uiState.value.addons.any { canonicalManifestUrl(it.manifestUrl) == canonicalManifestUrl(source.url) }) {
                             existing++
                             continue
                         }
@@ -81,7 +81,7 @@ internal fun SourceBundlePanel() {
                     PluginRepository.initialize()
                     for (source in BundledMediaSources.nuvioPlugins) {
                         message = "Plugin deposu kontrolü: ${source.name}"
-                        if (PluginRepository.uiState.value.repositories.any { it.manifestUrl.trimEnd('/') == source.url.trimEnd('/') }) {
+                        if (PluginRepository.uiState.value.repositories.any { canonicalManifestUrl(it.manifestUrl) == canonicalManifestUrl(source.url) }) {
                             existing++
                             continue
                         }
@@ -125,4 +125,13 @@ internal fun SourceBundlePanel() {
             )
         }
     }
+}
+
+/** Treat a base URL and its normalized /manifest.json address as the same source. */
+private fun canonicalManifestUrl(url: String): String {
+    val withoutFragment = url.substringBefore("#")
+    val path = withoutFragment.substringBefore("?").trimEnd('/')
+    val query = withoutFragment.substringAfter("?", "")
+    val normalizedPath = if (path.endsWith("/manifest.json")) path else "$path/manifest.json"
+    return if (query.isEmpty()) normalizedPath else "$normalizedPath?$query"
 }
