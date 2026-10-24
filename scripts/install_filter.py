@@ -11,6 +11,7 @@ import sys
 
 PART = Path('composeApp/src/commonMain/kotlin/com/nuvio/app/features/streams')
 FLAG = 'TURKISH_DUB_FILTER_V1'
+V2_FLAG = 'TURKISH_DUB_FILTER_V2_STICKY'
 
 
 def replace_once(s: str, old: str, new: str, marker: str) -> str:
@@ -21,7 +22,7 @@ def replace_once(s: str, old: str, new: str, marker: str) -> str:
     return s.replace(old, new, 1)
 
 
-def patch(original: str) -> str:
+def patch_v1(original: str) -> str:
     if FLAG in original:
         return original
     modified = replace_once(
@@ -68,6 +69,57 @@ def patch(original: str) -> str:
     return head + segment + tail
 
 
+
+def patch(original: str) -> str:
+    """Apply the tested v1 insertion followed by v2's pinned toolbar layout."""
+    if V2_FLAG in original:
+        return original
+    v1 = patch_v1(original)
+    begin = v1.index('internal fun StreamList(')
+    end = v1.index('private fun LazyListScope.streamSection(', begin)
+    head, segment, tail = v1[:begin], v1[begin:end], v1[end:]
+    old_list = (
+        '    CompositionLocalProvider(LocalStreamSizeLabelFormat provides formatStreamSize) {\n'
+        '    LazyColumn(\n'
+        '        modifier = modifier.fillMaxWidth(),\n'
+    )
+    new_list = (
+        '    CompositionLocalProvider(LocalStreamSizeLabelFormat provides formatStreamSize) {\n'
+        '    // ' + V2_FLAG + ': keep the audio filter visible when browsing long lists.\n'
+        '    Column(modifier = modifier.fillMaxWidth()) {\n'
+        '        TurkishDubFilterToolbar(\n'
+        '            mode = turkishAudioFilter,\n'
+        '            onModeSelected = { turkishAudioFilter = it },\n'
+        '            visibleCount = filteredGroups.sumOf { it.streams.size },\n'
+        '            totalCount = uiState.filteredGroups.sumOf { it.streams.size },\n'
+        '        )\n'
+        '        LazyColumn(\n'
+        '            modifier = Modifier.weight(1f).fillMaxWidth(),\n'
+    )
+    segment = replace_once(segment, old_list, new_list, 'v2 sticky filter location')
+    old_item = (
+        '        item(key = "turkish_audio_filter") {\n'
+        '            TurkishDubFilterToolbar(\n'
+        '                mode = turkishAudioFilter,\n'
+        '                onModeSelected = { turkishAudioFilter = it },\n'
+        '                visibleCount = filteredGroups.sumOf { it.streams.size },\n'
+        '                totalCount = uiState.filteredGroups.sumOf { it.streams.size },\n'
+        '            )\n'
+        '        }\n'
+    )
+    segment = replace_once(segment, old_item, '', 'v1 item removal')
+    old_end = '    }\n    }\n}\n'
+    if not segment.endswith(old_end):
+        raise RuntimeError('Safety stop: StreamList end changed; refusing to add Column.')
+    segment = segment[:-len(old_end)] + (
+        '    } // end LazyColumn\n'
+        '    } // end sticky Column\n'
+        '    } // end CompositionLocalProvider\n'
+        '}\n'
+    )
+    return head + segment + tail
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument('repository', help='Locally cloned NuvioMobile repository root')
@@ -88,7 +140,7 @@ def main() -> int:
         print('Compatible source markers: OK; no files modified.')
         return 0
     if result == original:
-        print('Already patched; no changes.')
+        print('Already patched to v2; no changes.')
         return 0
     destination = repository / PART
     this_src = Path(__file__).resolve().parent.parent / 'src'

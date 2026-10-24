@@ -14,7 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-/** Accessible in-list toggle that works with *all* enabled addons and plugins. */
+/** A presentation-only filter; all installed addons and plugins remain enabled. */
 @Composable
 internal fun TurkishDubFilterToolbar(
     mode: TurkishAudioFilterMode,
@@ -36,7 +36,7 @@ internal fun TurkishDubFilterToolbar(
             }
         }
         Text(
-            text = "$visibleCount / $totalCount kaynak · Türkçe ses tahmini sadece sağlayıcı etiketlerindendir; ses izi doğrulanmadı.",
+            text = "$visibleCount / $totalCount kaynak · 'Dublaj' etiketi olası Türkçe ses demektir; oynatıcıdan doğrulanmadı.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
