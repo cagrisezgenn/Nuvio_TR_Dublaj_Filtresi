@@ -2,6 +2,7 @@ package com.nuvio.app.features.streams
 
 import com.nuvio.app.features.addons.httpGetTextWithHeaders
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 
 /**
@@ -43,6 +44,8 @@ internal object TurkishAudioManifestProbe {
                     else -> DeclaredAudioResult(DeclaredAudioLanguage.UNKNOWN, "Ses manifesti okunamadı veya korumalı akış")
                 }
             }
+        } catch (timeout: TimeoutCancellationException) {
+            DeclaredAudioResult(DeclaredAudioLanguage.UNKNOWN, "Manifest isteği zaman aşımına uğradı")
         } catch (cancel: CancellationException) {
             throw cancel
         } catch (exception: Exception) {
