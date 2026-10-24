@@ -2,6 +2,9 @@ name: Build Nuvio TR Dublaj (debug APK)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feat/bundled-source-catalog-v0.3
 
 permissions:
   contents: read
